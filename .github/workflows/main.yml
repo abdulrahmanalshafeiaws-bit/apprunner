@@ -1,0 +1,41 @@
+name: Django App CI/CD - Serverless
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build_and_deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.13.7"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Build Docker image
+        run: |
+          # Configure AWS credentials
+          aws configure set aws_access_key_id "${{ secrets.AWS_ACCESS_KEY_ID }}"
+          aws configure set aws_secret_access_key "${{ secrets.AWS_SECRET_ACCESS_KEY }}"
+
+          # Login to ECR
+          aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 329643319566.dkr.ecr.us-east-1.amazonaws.com
+
+          # Build and push image
+          docker build -t 329643319566.dkr.ecr.us-east-1.amazonaws.com/apprunner:latest .
+          docker push 329643319566.dkr.ecr.us-east-1.amazonaws.com/apprunner:latest
+
+      - name: Deploy to App Runner
+        run: |
+          echo "🚀 App Runner automatically deploys new ECR images"
+          echo "✅ Django application deployed to App Runner via ECR"
+          echo "📝 Note: App Runner monitors ECR and auto-deploys when new images are pushed"
